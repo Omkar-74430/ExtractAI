@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExtractAI</title>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Main title of the application -->
+        <h1 class="search-title">Welcome to ExtractAI</h1>
+        
+        <!-- Div to display processing links -->
+        <div id="processing-links"></div>
+        <!-- Div to display search results -->
+        <div id="search-results"></div>
+
+        <!-- Search form -->
+        <form id="search-form">
+            <input type="text" id="query-input" placeholder="Ask me anything..." required>
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("search-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const queryInput = document.getElementById("query-input");
+            const query = queryInput.value.trim();
+            document.getElementById("search-results").innerHTML = `<p class="loading">Searching...</p>`;
+
+            try {
+                const response = await fetch("/search", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+                const resultsDiv = document.getElementById("search-results");
+                resultsDiv.innerHTML = "";
+
+                if (data.error) {
+                    resultsDiv.innerHTML = `<p class="error-message">${data.error}</p>`;
+                    return;
+                }
+
+                // Best URL Link
+                if (data.best_url) {
+                    document.getElementById("processing-links").innerHTML = `
+                        <a href="${data.best_url}" target="_blank" class="processing-link">Learn more</a>
+                    `;
+                }
+
+                // Display Results
+                let output = `<h2> ${query}</h2>`;
+                data.headlines.forEach((headline, index) => {
+                    output += `<h3>${headline}</h3><p>${data.contents[index]}</p>`;
+                });
+
+                resultsDiv.innerHTML = output;
+
+                // Scroll to bottom
+                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+
+                // Keep the input box focused
+                queryInput.value = "";
+                queryInput.focus();
+
+            } catch (error) {
+                document.getElementById("search-results").innerHTML = `<p class="error-message">An error occurred.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
